@@ -1,0 +1,16 @@
+{
+  "id": "/admin",
+  "name": "Efatá Control",
+  "short_name": "Efatá Control",
+  "description": "PWA administrativo para solicitações de acesso e briefing confidencial.",
+  "lang": "pt-BR",
+  "start_url": "/admin?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#07111f",
+  "background_color": "#07111f",
+  "icons": [
+    {"src":"/icons/patroai-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"/icons/patroai-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
