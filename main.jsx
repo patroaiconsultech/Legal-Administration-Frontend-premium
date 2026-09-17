@@ -190,7 +190,7 @@ function urlBase64ToUint8Array(base64String){
 }
 
 function Admin(){
-  const [phase,setPhase]=useState('login'),[email,setEmail]=useState('contato@patroai.com'),[password,setPassword]=useState(''),[code,setCode]=useState('')
+  const [phase,setPhase]=useState('login'),[email,setEmail]=useState('daniel@patroai.com'),[password,setPassword]=useState(''),[code,setCode]=useState('')
   const [data,setData]=useState(null),[err,setErr]=useState(''),[pushState,setPushState]=useState('')
   async function start(e){e.preventDefault();setErr('');try{await api('/api/admin/auth/start',{method:'POST',body:JSON.stringify({email,password})});setPhase('otp')}catch(e){setErr(e.message)}}
   async function verify(e){e.preventDefault();setErr('');try{await api('/api/admin/auth/verify',{method:'POST',body:JSON.stringify({email,code})});setPhase('dash');refresh()}catch(e){setErr(e.message)}}
