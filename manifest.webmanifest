@@ -1,8 +1,8 @@
 {
   "id": "/admin",
-  "name": "Efatá Control",
-  "short_name": "Efatá Control",
-  "description": "PWA administrativo para solicitações de acesso e briefing confidencial.",
+  "name": "Estevez Guarda — Centro de Inteligência",
+  "short_name": "Estevez Guarda",
+  "description": "MVP do Centro de Inteligência da Administração Judicial",
   "lang": "pt-BR",
   "start_url": "/admin?source=pwa",
   "scope": "/",
@@ -10,7 +10,17 @@
   "theme_color": "#07111f",
   "background_color": "#07111f",
   "icons": [
-    {"src":"/icons/patroai-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
-    {"src":"/icons/patroai-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+    {
+      "src": "/icons/patroai-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/patroai-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
