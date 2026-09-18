@@ -9,7 +9,7 @@ import {api,assetUrl,receiptUrl} from './api'
 import './styles.css'
 
 const path=window.location.pathname
-const approvalToken=path.startsWith('/a/')?decodeURIComponent(path.slice(3)):null
+const activationToken=path.startsWith('/activate/')?decodeURIComponent(path.slice('/activate/'.length)):(path.startsWith('/a/')?decodeURIComponent(path.slice(3)):null)
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}))
@@ -29,8 +29,8 @@ function RequestAccess(){
   async function submit(e){
     e.preventDefault();setErr('');setBusy(true)
     try{
-      await api('/api/access-requests',{method:'POST',body:JSON.stringify(form)})
-      setState('pending')
+      const r=await api('/api/access-requests',{method:'POST',body:JSON.stringify(form)})
+      setState(r.status==='ACCOUNT_ACTIVE'?'active':'pending')
     }catch(e){setErr(e.message)}finally{setBusy(false)}
   }
   return <Shell><section className="gate">
@@ -38,31 +38,78 @@ function RequestAccess(){
     <div className="eyebrow">ESTEVEZ GUARDA • MVP FUNCIONAL</div>
     <h1>Centro de Inteligência da Administração Judicial</h1>
     <p className="lead">Um painel demonstrativo para visualizar operações, documentos, marcos processuais e conversar com o Assistente Estevez.</p>
+    <div className="entry-actions"><a className="primary-link" href="/login">ENTRAR</a><span>Já possui acesso? Entre com e-mail e senha.</span></div>
     <div className="trust"><span><UserCheck/>Aprovação humana</span><span><LockKeyhole/>Acesso individual</span><span><FileCheck2/>Confidencialidade registrada</span></div>
     <ErrorBox text={err}/>
     {state==='form'?<form className="form" onSubmit={submit}>
+      <div className="form-divider"><span>NOVO ACESSO</span></div>
       <label>Nome completo<input required value={form.full_name} onChange={e=>setForm({...form,full_name:e.target.value})}/></label>
       <label>E-mail profissional<input required type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></label>
       <label>Organização<input required value={form.organization} onChange={e=>setForm({...form,organization:e.target.value})}/></label>
       <label>Cargo / função<input required value={form.role} onChange={e=>setForm({...form,role:e.target.value})}/></label>
       <label>Finalidade do acesso<textarea required value={form.purpose} onChange={e=>setForm({...form,purpose:e.target.value})}/></label>
       <button disabled={busy}>{busy?'Enviando…':'SOLICITAR ACESSO'}<ArrowRight/></button>
-    </form>:<div className="pending-card"><Clock3/><div><h2>Solicitação recebida.</h2><p>Seu acesso está aguardando análise do Super Admin. Se aprovado, você receberá um link individual de uso único por e-mail.</p></div></div>}
+    </form>:state==='active'?<div className="pending-card"><UserCheck/><div><h2>Este e-mail já possui acesso.</h2><p>Use sua conta para entrar normalmente.</p><a className="inline-action" href="/login">IR PARA ENTRAR</a></div></div>:<div className="pending-card"><Clock3/><div><h2>Solicitação recebida.</h2><p>Seu acesso está aguardando análise do Super Admin. Se aprovado, você receberá um link de ativação. Na primeira ativação, confirmará o e-mail com um código e definirá sua senha.</p></div></div>}
+    <div className="admin-entry"><a href="/admin">Acesso administrativo</a></div>
   </section></Shell>
 }
 
-function ApprovedAccess(){
-  const [phase,setPhase]=useState('loading'),[err,setErr]=useState('')
+function AccountActivation(){
+  const [phase,setPhase]=useState('sending'),[code,setCode]=useState(''),[password,setPassword]=useState(''),[confirm,setConfirm]=useState('')
+  const [message,setMessage]=useState(''),[err,setErr]=useState(''),[busy,setBusy]=useState(false)
   useEffect(()=>{(async()=>{
     try{
-      await api('/api/access/consume',{method:'POST',body:JSON.stringify({token:approvalToken})})
-      history.replaceState({},'', '/briefing')
-      setPhase('ready')
+      const r=await api('/api/account/activation/start',{method:'POST',body:JSON.stringify({token:activationToken})})
+      setMessage(r.recipient_email_masked?`Código enviado para ${r.recipient_email_masked}.`:r.message)
+      setPhase('form')
     }catch(e){setErr(e.message);setPhase('error')}
   })()},[])
-  if(phase==='loading')return <Shell><div className="center"><RefreshCw className="spin"/><p>Validando autorização do Super Admin…</p></div></Shell>
-  if(phase==='error')return <Shell><section className="gate"><h1>Acesso indisponível</h1><ErrorBox text={err}/><p className="lead">Solicite um novo acesso se o link tiver expirado ou já tiver sido utilizado.</p></section></Shell>
-  return <BriefingGate/>
+  async function complete(e){
+    e.preventDefault();setErr('')
+    if(password.length<8)return setErr('A senha precisa ter pelo menos 8 caracteres.')
+    if(password!==confirm)return setErr('As senhas não coincidem.')
+    setBusy(true)
+    try{
+      await api('/api/account/activation/complete',{method:'POST',body:JSON.stringify({token:activationToken,code,password})})
+      history.replaceState({},'', '/briefing')
+      window.location.assign('/briefing')
+    }catch(e){setErr(e.message)}finally{setBusy(false)}
+  }
+  if(phase==='sending')return <Shell><div className="center"><RefreshCw className="spin"/><p>Preparando sua ativação…</p></div></Shell>
+  if(phase==='error')return <Shell><section className="gate"><h1>Ativação indisponível</h1><ErrorBox text={err}/><p className="lead">Se sua conta já foi ativada, use a tela Entrar.</p><a className="primary-link" href="/login">ENTRAR</a></section></Shell>
+  return <Shell><section className="gate auth-card">
+    <div className="gate-icon"><UserCheck/></div><div className="eyebrow">PRIMEIRO ACESSO</div>
+    <h1>Ative sua conta</h1><p className="lead">{message} O código é usado somente nesta ativação. Depois, o acesso normal será por e-mail e senha.</p>
+    <ErrorBox text={err}/>
+    <form className="form" onSubmit={complete}>
+      <label>Código de ativação<input className="otp" inputMode="numeric" maxLength="6" required value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,''))}/></label>
+      <label>Crie sua senha<input type="password" minLength="8" required value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password"/></label>
+      <label>Confirme sua senha<input type="password" minLength="8" required value={confirm} onChange={e=>setConfirm(e.target.value)} autoComplete="new-password"/></label>
+      <button disabled={busy||code.length!==6}>{busy?'Ativando…':'ATIVAR E ENTRAR'}<ArrowRight/></button>
+    </form>
+  </section></Shell>
+}
+
+function Login(){
+  const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[err,setErr]=useState(''),[busy,setBusy]=useState(false)
+  async function submit(e){
+    e.preventDefault();setErr('');setBusy(true)
+    try{
+      await api('/api/account/login',{method:'POST',body:JSON.stringify({email,password})})
+      window.location.assign('/briefing')
+    }catch(e){setErr(e.message)}finally{setBusy(false)}
+  }
+  return <Shell><section className="gate auth-card">
+    <div className="gate-icon"><LockKeyhole/></div><div className="eyebrow">ESTEVEZ GUARDA</div>
+    <h1>Entrar</h1><p className="lead">Use o e-mail e a senha definidos na ativação da sua conta.</p>
+    <ErrorBox text={err}/>
+    <form className="form" onSubmit={submit}>
+      <label>E-mail<input type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)}/></label>
+      <label>Senha<input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
+      <button disabled={busy}>{busy?'Entrando…':'ENTRAR'}<ArrowRight/></button>
+    </form>
+    <div className="auth-links"><a href="/">Solicitar acesso</a><a href="/admin">Acesso administrativo</a></div>
+  </section></Shell>
 }
 
 function LegalTerm({term,onAccepted}){
@@ -108,7 +155,7 @@ function BriefingGate(){
   }
   useEffect(()=>{resolve()},[])
   if(mode==='loading')return <Shell><div className="center"><RefreshCw className="spin"/><p>Verificando sua autorização…</p></div></Shell>
-  if(mode==='error')return <Shell><section className="gate"><h1>Sessão não autorizada</h1><ErrorBox text={err}/><p>Entre pelo link individual aprovado pelo Super Admin.</p></section></Shell>
+  if(mode==='error')return <Shell><section className="gate"><h1>Sessão não autorizada</h1><ErrorBox text={err}/><p>Entre com sua conta aprovada para continuar.</p><a className="primary-link" href="/login">ENTRAR</a></section></Shell>
   if(mode==='term')return <LegalTerm term={data} onAccepted={resolve}/>
   return <Presentation initial={data}/>
 }
@@ -211,12 +258,16 @@ function MvpCommandCenter({portfolio,agentEnabled}){
 
 function Presentation({initial}){
   const [data,setData]=useState(initial||null),[err,setErr]=useState('')
+  async function logout(){
+    try{await api('/api/account/logout',{method:'POST'})}catch{}
+    window.location.assign('/login')
+  }
   useEffect(()=>{if(!initial)api('/api/content/presentation').then(setData).catch(e=>setErr(e.message))},[])
   if(err)return <Shell><ErrorBox text={err}/></Shell>
   if(!data)return <Shell><div className="center"><RefreshCw className="spin"/><p>Carregando conteúdo autorizado…</p></div></Shell>
   return <Shell wide><Watermark viewer={data.viewer}/>
     <section className="hero" style={{backgroundImage:`linear-gradient(90deg,rgba(5,14,25,.95),rgba(5,14,25,.28)),url(${assetUrl(data.hero_asset)})`}}>
-      <div className="hero-copy"><div className="eyebrow">{data.classification} • {data.updated_at}</div><h1>{data.title}</h1><p>{data.subtitle}</p><div className="hero-actions"><a href="#command-center">Abrir Command Center</a><a className="ghost" href={receiptUrl()} target="_blank">Comprovante de aceite</a></div></div>
+      <div className="hero-copy"><div className="eyebrow">{data.classification} • {data.updated_at}</div><h1>{data.title}</h1><p>{data.subtitle}</p><div className="hero-actions"><a href="#command-center">Abrir Command Center</a><a className="ghost" href={receiptUrl()} target="_blank">Comprovante de aceite</a><button className="ghost hero-logout" onClick={logout}>Sair</button></div></div>
     </section>
     <div className="content">
       <MvpCommandCenter portfolio={data.demo_portfolio} agentEnabled={!!data.viewer.agent_enabled}/>
@@ -243,15 +294,20 @@ function urlBase64ToUint8Array(base64String){
 
 function Admin(){
   const [phase,setPhase]=useState('login'),[email,setEmail]=useState('daniel@patroai.com'),[password,setPassword]=useState(''),[code,setCode]=useState('')
-  const [data,setData]=useState(null),[err,setErr]=useState(''),[pushState,setPushState]=useState('')
+  const [data,setData]=useState(null),[err,setErr]=useState(''),[pushState,setPushState]=useState(''),[decisionState,setDecisionState]=useState('')
   async function start(e){e.preventDefault();setErr('');try{await api('/api/admin/auth/start',{method:'POST',body:JSON.stringify({email,password})});setPhase('otp')}catch(e){setErr(e.message)}}
   async function verify(e){e.preventDefault();setErr('');try{await api('/api/admin/auth/verify',{method:'POST',body:JSON.stringify({email,code})});setPhase('dash');refresh()}catch(e){setErr(e.message)}}
   async function refresh(){try{setData(await api('/api/admin/overview'))}catch(e){setErr(e.message)}}
   async function decide(id,kind){
     const reason=prompt(kind==='approve'?'Motivo da aprovação:':'Motivo da rejeição:')
     if(!reason)return
-    try{await api(`/api/admin/access-requests/${id}/${kind}`,{method:'POST',body:JSON.stringify({reason})});await refresh()}
-    catch(e){setErr(e.message)}
+    try{
+      setDecisionState('')
+      const r=await api(`/api/admin/access-requests/${id}/${kind}`,{method:'POST',body:JSON.stringify({reason})})
+      if(kind==='approve')setDecisionState(r.email_delivery==='sent'?'Acesso aprovado. E-mail de ativação enviado.':'Acesso aprovado, mas o e-mail de ativação não foi entregue. Verifique o Resend antes de orientar o usuário.')
+      else setDecisionState('Solicitação rejeitada.')
+      await refresh()
+    }catch(e){setErr(e.message)}
   }
   async function enablePush(){
     setPushState('Preparando…')
@@ -274,7 +330,7 @@ function Admin(){
   const pending=requests.filter(x=>x.state==='PENDING_ADMIN_APPROVAL')
   return <Shell wide><div className="admin">
     <div className="admin-top"><div><div className="eyebrow">ESTEVEZ CONTROL</div><h1>Solicitações de acesso</h1><p className="intro">A decisão humana é a porta de entrada. O push apenas avisa; o banco mantém a fila oficial.</p></div><div className="admin-actions"><button className="secondary" onClick={refresh}>Atualizar</button><button onClick={enablePush}><BellRing/>Ativar push</button></div></div>
-    {pushState&&<div className="push-state">{pushState}</div>}<ErrorBox text={err}/>
+    {pushState&&<div className="push-state">{pushState}</div>}{decisionState&&<div className="success-state">{decisionState}</div>}<ErrorBox text={err}/>
     <div className="metrics"><div><b>{pending.length}</b><span>Pendentes</span></div><div><b>{data?.acceptances?.length||0}</b><span>Aceites jurídicos</span></div><div><b>{data?.events?.length||0}</b><span>Eventos recentes</span></div></div>
     <section className="request-list"><h2>Fila de aprovação</h2>{requests.length===0?<p>Nenhuma solicitação.</p>:requests.map(r=><article className={'request-card '+r.state.toLowerCase()} key={r.id}>
       <div className="request-head"><div><b>{r.full_name}</b><span>{r.email}</span></div><small>{r.state}</small></div>
@@ -288,7 +344,8 @@ function Admin(){
 
 function App(){
   if(path==='/admin')return <Admin/>
-  if(approvalToken)return <ApprovedAccess/>
+  if(path==='/login')return <Login/>
+  if(activationToken)return <AccountActivation/>
   if(path==='/briefing')return <BriefingGate/>
   return <RequestAccess/>
 }
