@@ -1,0 +1,9 @@
+{
+  "product": "Estevez Guarda",
+  "release": "MVP2_AUTH_R2",
+  "date": "2026-09-18",
+  "default_route": "/",
+  "default_screen": "login",
+  "request_access_route": "/request-access",
+  "login_route": "/login"
+}

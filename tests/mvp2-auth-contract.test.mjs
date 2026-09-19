@@ -5,11 +5,13 @@ import fs from "node:fs";
 const main=fs.readFileSync("main.jsx","utf8");
 const api=fs.readFileSync("api.js","utf8");
 
-test("MVP2 exposes activation, returning login and admin routes",()=>{
-  assert.match(main,/path==='\/login'/);
+test("MVP2 exposes authentication as the default entry route",()=>{
+  assert.match(main,/path==='\/' \|\| path==='\/login'/);
+  assert.match(main,/path==='\/request-access'/);
   assert.match(main,/path==='\/admin'/);
   assert.match(main,/function AccountActivation/);
   assert.match(main,/function Login/);
+  assert.match(main,/MVP2 AUTH R2/);
 });
 
 test("returning login is email/password without OTP",()=>{

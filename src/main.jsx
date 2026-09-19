@@ -108,7 +108,8 @@ function Login(){
       <label>Senha<input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
       <button disabled={busy}>{busy?'Entrando…':'ENTRAR'}<ArrowRight/></button>
     </form>
-    <div className="auth-links"><a href="/">Solicitar acesso</a><a href="/admin">Acesso administrativo</a></div>
+    <div className="auth-links"><a href="/request-access">Solicitar acesso</a><a href="/admin">Acesso administrativo</a></div>
+    <div className="release-tag">MVP2 AUTH R2 • 2026-09-18</div>
   </section></Shell>
 }
 
@@ -344,9 +345,10 @@ function Admin(){
 
 function App(){
   if(path==='/admin')return <Admin/>
-  if(path==='/login')return <Login/>
+  if(path==='/' || path==='/login')return <Login/>
+  if(path==='/request-access')return <RequestAccess/>
   if(activationToken)return <AccountActivation/>
   if(path==='/briefing')return <BriefingGate/>
-  return <RequestAccess/>
+  return <Login/>
 }
 createRoot(document.getElementById('root')).render(<App/>)

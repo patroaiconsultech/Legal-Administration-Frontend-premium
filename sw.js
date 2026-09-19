@@ -1,4 +1,4 @@
-const CACHE = "efata-secure-briefing-v1-1";
+const CACHE = "estevez-guarda-mvp2-auth-r2";
 const PUBLIC_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icons/patroai-192.png", "/icons/patroai-512.png"];
 
 self.addEventListener("install", event => {
@@ -15,7 +15,7 @@ self.addEventListener("fetch", event => {
   const req = event.request;
   const url = new URL(req.url);
   if(req.method !== "GET" || url.origin !== self.location.origin) return;
-  if(url.pathname.startsWith("/api") || url.pathname.startsWith("/admin") || url.pathname.startsWith("/briefing") || url.pathname.startsWith("/a/")) return;
+  if(url.pathname.startsWith("/api") || url.pathname.startsWith("/admin") || url.pathname.startsWith("/briefing") || url.pathname.startsWith("/login") || url.pathname.startsWith("/request-access") || url.pathname.startsWith("/activate/") || url.pathname.startsWith("/a/")) return;
   event.respondWith(
     fetch(req, {cache:"no-store"}).catch(()=>caches.match(req).then(r=>r || caches.match("/index.html")))
   );
@@ -24,7 +24,7 @@ self.addEventListener("fetch", event => {
 self.addEventListener("push", event => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch {}
-  const title = data.title || "Efatá";
+  const title = data.title || "Estevez Guarda";
   const options = {
     body: data.body || "Nova atualização disponível.",
     icon: "/icons/patroai-192.png",

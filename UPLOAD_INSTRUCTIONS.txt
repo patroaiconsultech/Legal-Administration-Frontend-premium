@@ -1,0 +1,27 @@
+UPLOAD NA RAIZ DO REPOSITÓRIO FRONTEND.
+
+Substituir:
+- main.jsx
+- src/main.jsx
+- styles.css
+- src/styles.css
+- sw.js
+- index.html
+- tests/mvp2-auth-contract.test.mjs
+
+Adicionar:
+- public/release.json
+
+Depois do commit:
+NÃO usar "Redeploy" do deployment antigo.
+Railway -> CMD/CTRL+K -> Deploy Latest Commit.
+
+Provas de runtime esperadas:
+1. GET /release.json
+   release = MVP2_AUTH_R2
+2. GET /
+   deve abrir a tela "Entrar"
+3. GET /request-access
+   deve abrir "Solicitar acesso"
+4. GET /login
+   deve abrir a mesma tela "Entrar"

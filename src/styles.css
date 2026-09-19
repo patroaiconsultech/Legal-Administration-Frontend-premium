@@ -68,3 +68,5 @@ footer span{opacity:.65;font-size:.84em}
 .auth-links{display:flex;justify-content:space-between;gap:12px;margin-top:18px}
 .success-state{margin:12px 0;padding:12px 14px;border:1px solid rgba(100,214,156,.35);border-radius:12px;background:rgba(100,214,156,.08);color:var(--good)}
 .hero-actions .hero-logout{font:inherit;cursor:pointer;padding:11px 16px}
+
+.release-tag{margin-top:20px;text-align:center;color:var(--muted);font-size:.68rem;letter-spacing:.08em;opacity:.75}
